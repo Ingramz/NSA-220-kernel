@@ -1,0 +1,324 @@
+/*
+ * Copyright (C) 2014 Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+ * Copyright (C) Indrek Ardel <indrek@ardel.eu>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2. This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "orion5x-mv88f5182.dtsi"
+
+/ {
+	model = "ZyXEL NSA-220";
+	compatible = "zyxel,nsa-220", "marvell,orion5x-88f5182", "marvell,orion5x";
+
+	memory {
+		reg = <0x00000000 0x8000000>; /* 128 MB */
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200n8 earlyprintk";
+		linux,stdout-path = &uart0;
+	};
+
+	soc {
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000>, /* Internal registers (SoC specific) */
+			 <MBUS_ID(0x09, 0x00) 0 0xf2200000 0x800>, /* Cryptographic Engine SRAM (SoC specific) */
+			 <MBUS_ID(0x01, 0x0f) 0 0xf8000000 0x1000000>; /* Boot CS (Board specific) */
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-0 = <&pmx_btn_reset &pmx_btn_copy>;
+		pinctrl-names = "default";
+
+		button@1 {
+			label = "Power Button";
+			linux,code = <KEY_POWER>;
+			gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+		};
+		button@2 {
+			label = "Copy Button";
+			linux,code = <KEY_COPY>;
+			gpios = <&gpio0 7 GPIO_ACTIVE_LOW>;
+		};
+		button@3 {
+			label = "Reset Button";
+			linux,code = <KEY_RESTART>;
+			gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-0 = <&pmx_led_hdd1_red &pmx_led_hdd2_red
+		&pmx_led_sys_green &pmx_led_sys_red
+		&pmx_led_copy_green &pmx_led_copy_red>;
+		pinctrl-names = "default";
+
+		green-sys {
+			label = "nsa220:green:sys";
+			gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+		red-sys {
+			label = "nsa220:red:sys";
+			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
+		};
+		red-hdd1 {
+			label = "nsa220:red:hdd1";
+			gpios = <&gpio0 0 GPIO_ACTIVE_LOW>;
+		};
+		red-hdd2 {
+			label = "nsa220:red:hdd2";
+			gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
+		};
+		green-copy {
+			label = "nsa220:green:copy";
+			gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		};
+		red-copy {
+			label = "nsa220:red:copy";
+			gpios = <&gpio0 6 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	gpio_poweroff {
+		compatible = "gpio-poweroff";
+		gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>, <&gpio0 24 GPIO_ACTIVE_LOW>;
+	};
+
+	gpio_beeper {
+		compatible = "gpio-beeper";
+		gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&devbus_bootcs {
+	status = "okay";
+
+	devbus,keep-config;
+
+	flash@0 {
+		compatible = "cfi-flash";
+		reg = <0 0x1000000>;
+		bank-width = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partition@0 {
+			label = "kernel";
+			reg = <0x00000000 0x00220000>;
+			read-only;
+		};
+
+		partition@220000 {
+			label = "initrd";
+			reg = <0x00220000 0x00ce0000>;
+			read-only;
+		};
+
+		partition@f00000 {
+			label = "etc";
+			reg = <0x00f00000 0x000e0000>;
+		};
+
+		partition@fe0000 {
+			label = "bootbase";
+			reg = <0x00fe0000 0x00020000>;
+			read-only;
+		};
+	};
+};
+
+&mdio {
+	status = "okay";
+
+	ethphy: ethernet-phy {
+		reg = <1>;
+	};
+};
+
+&ehci0 {
+  status = "okay";
+};
+
+&ehci1 {
+  status = "okay";
+};
+
+&eth {
+	status = "okay";
+
+	ethernet-port@0 {
+		local-mac-address = [DE AD BE EF 12 34]; /* TODO: Remove later */
+		phy-handle = <&ethphy>;
+	};
+};
+
+&i2c {
+	status = "okay";
+	clock-frequency = <100000>;
+	#address-cells = <1>;
+
+	/* RTC with CMOS battery */
+	pcf8563: pcf8563@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+
+	/* ADT7463 Used for fan regulation */
+	adt7463: adt7463@2e {
+		compatible = "national,lm85";
+		reg = <0x2e>;
+	};
+};
+
+&pinctrl {
+	pinctrl-0 = <	&pmx_mpp2_unknown &pmx_mpp8_unknown
+								&pmx_mpp9_unknown &pmx_mpp10_unknown
+								&pmx_mpp11_unknown &pmx_mpp16_unknown
+								&pmx_mpp18_unknown &pmx_mpp19_unknown >;
+	pinctrl-names = "default";
+
+	pmx_led_hdd1_red: pmx-led-hdd1-red {
+		marvell,pins = "mpp0";
+		marvell,function = "gpio";
+	};
+
+	pmx_led_hdd2_red: pmx-led-hdd2-red {
+		marvell,pins = "mpp1";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1543 says it is GPIO
+	 */
+	pmx_mpp2_unknown: pmx-mpp2-unknown {
+		marvell,pins = "mpp2";
+		marvell,function = "gpio";
+	};
+
+	pmx_btn_reset: pmx-btn-reset {
+		marvell,pins = "mpp3";
+		marvell,function = "gpio";
+	};
+
+	pmx_led_sys_green: pmx-led-sys-green {
+		marvell,pins = "mpp4";
+		marvell,function = "gpio";
+	};
+
+	pmx_led_sys_red: pmx-led-sys-red {
+		marvell,pins = "mpp5";
+		marvell,function = "gpio";
+	};
+
+	pmx_led_copy_red: pmx-led-copy-red {
+		marvell,pins = "mpp6";
+		marvell,function = "gpio";
+	};
+
+	pmx_btn_copy: pmx-btn-copy {
+		marvell,pins = "mpp7";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1544 says it is GPIO
+	*/
+	pmx_mpp8_unknown: pmx-mpp8-unknown {
+		marvell,pins = "mpp8";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1544 says it is GPIO
+	*/
+	pmx_mpp9_unknown: pmx-mpp9-unknown {
+		marvell,pins = "mpp9";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1544 says it is GPIO
+	*/
+	pmx_mpp10_unknown: pmx-mpp10-unknown {
+		marvell,pins = "mpp10";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1544 says it is GPIO
+	*/
+	pmx_mpp11_unknown: pmx-mpp11-unknown {
+		marvell,pins = "mpp11";
+		marvell,function = "gpio";
+	};
+
+	pmx_sata0_led_active: pmx-sata0-led-active {
+		marvell,pins = "mpp14";
+		marvell,function = "sata0";
+	};
+
+	pmx_sata1_led_active: pmx-sata1-led-active {
+		marvell,pins = "mpp15";
+		marvell,function = "sata1";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1545 says it is GPIO
+	*/
+	pmx_mpp16_unknown: pmx-mpp16-unknown {
+		marvell,pins = "mpp16";
+		marvell,function = "gpio";
+	};
+
+	pmx_led_copy_green: pmx-led-copy-green {
+		marvell,pins = "mpp17";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1545 says it is GPIO
+	*/
+	pmx_mpp18_unknown: pmx-mpp18-unknown {
+		marvell,pins = "mpp18";
+		marvell,function = "gpio";
+	};
+
+	/*
+		TODO: Find out what is this for.
+		mvBoardEnvSpec.h:1545 says it is GPIO
+	*/
+	pmx_mpp19_unknown: pmx-mpp19-unknown {
+		marvell,pins = "mpp19";
+		marvell,function = "gpio";
+	};
+};
+
+&sata {
+	pinctrl-0 = <&pmx_sata0_led_active &pmx_sata1_led_active>;
+	pinctrl-names = "default";
+	status = "okay";
+	nr-ports = <2>;
+};
+
+&uart0 {
+	status = "okay";
+};

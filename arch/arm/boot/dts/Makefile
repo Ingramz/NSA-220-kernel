@@ -376,6 +376,7 @@ dtb-$(CONFIG_SOC_DRA7XX) += dra7-evm.dtb \
 dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-d2-network.dtb \
 	orion5x-lacie-ethernet-disk-mini-v2.dtb \
 	orion5x-maxtor-shared-storage-2.dtb \
+	orion5x-zyxel-nsa-220.dtb \
 	orion5x-rd88f5182-nas.dtb
 dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
 dtb-$(CONFIG_ARCH_QCOM) += \
