@@ -23,7 +23,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyS0,115200n8 earlyprintk";
+		bootargs = "root=/dev/sda1 rw console=ttyS0,115200n8 earlyprintk";
 		linux,stdout-path = &uart0;
 	};
 
@@ -93,7 +93,7 @@
 
 	gpio_poweroff {
 		compatible = "gpio-poweroff";
-		gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>, <&gpio0 24 GPIO_ACTIVE_LOW>;
+		gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
 	};
 
 	gpio_beeper {

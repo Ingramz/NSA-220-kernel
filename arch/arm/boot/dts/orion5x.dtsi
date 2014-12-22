@@ -75,7 +75,7 @@
 				#gpio-cells = <2>;
 				gpio-controller;
 				reg = <0x10100 0x40>;
-				ngpios = <32>;
+				ngpios = <26>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
 				interrupts = <6>, <7>, <8>, <9>;

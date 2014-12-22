@@ -40,7 +40,7 @@ static int orion_mpp_ctrl_get(unsigned pid, unsigned long *config)
 		unsigned off = (pid / MVEBU_MPPS_PER_REG) * MVEBU_MPP_BITS;
 		*config = (readl(mpp_base + off) >> shift) & MVEBU_MPP_MASK;
 	}
-	else {
+	else if(pid < 20) {
 		*config = (readl(high_mpp_base) >> shift) & MVEBU_MPP_MASK;
 	}
 
@@ -56,7 +56,7 @@ static int orion_mpp_ctrl_set(unsigned pid, unsigned long config)
 		u32 reg = readl(mpp_base + off) & ~(MVEBU_MPP_MASK << shift);
 		writel(reg | (config << shift), mpp_base + off);
 	}
-	else {
+	else if(pid < 20) {
 		u32 reg = readl(high_mpp_base) & ~(MVEBU_MPP_MASK << shift);
 		writel(reg | (config << shift), high_mpp_base);
 	}
@@ -159,10 +159,22 @@ static struct mvebu_mpp_mode orion_mpp_modes[] = {
 		 MPP_VAR_FUNCTION(0x0, "uart1", "rts",      V_5182 | V_5281),
 		 MPP_VAR_FUNCTION(0x1, "ge", "rxd7",        V_ALL),
 		 MPP_VAR_FUNCTION(0x5, "gpio", NULL,        V_5182)),
+	MPP_MODE(20,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
+	MPP_MODE(21,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
+	MPP_MODE(22,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
+	MPP_MODE(23,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
+	MPP_MODE(24,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
+	MPP_MODE(25,
+		MPP_VAR_FUNCTION(0x0, "gpio", NULL,        V_ALL)),
 };
 
 static struct mvebu_mpp_ctrl orion_mpp_controls[] = {
-	MPP_FUNC_CTRL(0, 19, NULL, orion_mpp_ctrl),
+	MPP_FUNC_CTRL(0, 25, NULL, orion_mpp_ctrl),
 };
 
 static struct pinctrl_gpio_range mv88f5181l_gpio_ranges[] = {
@@ -170,7 +182,7 @@ static struct pinctrl_gpio_range mv88f5181l_gpio_ranges[] = {
 };
 
 static struct pinctrl_gpio_range mv88f5182_gpio_ranges[] = {
-	MPP_GPIO_RANGE(0, 0, 0, 19),
+	MPP_GPIO_RANGE(0, 0, 0, 26),
 };
 
 static struct pinctrl_gpio_range mv88f5281_gpio_ranges[] = {
