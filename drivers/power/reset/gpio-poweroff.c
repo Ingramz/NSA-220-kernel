@@ -23,21 +23,28 @@
  * Hold configuration here, cannot be more than one instance of the driver
  * since pm_power_off itself is global.
  */
-static struct gpio_desc *reset_gpio;
+static struct gpio_desc *poweroff_gpio_1;
+static struct gpio_desc *poweroff_gpio_2;
 
 static void gpio_poweroff_do_poweroff(void)
 {
-	BUG_ON(!reset_gpio);
+	BUG_ON(!poweroff_gpio_1);
 
 	/* drive it active, also inactive->active edge */
-	gpiod_direction_output(reset_gpio, 1);
+	gpiod_direction_output(poweroff_gpio_1, 1);
+	if(poweroff_gpio_2 != NULL)
+		gpiod_direction_output(poweroff_gpio_2, 1);
 	mdelay(100);
 	/* drive inactive, also active->inactive edge */
-	gpiod_set_value(reset_gpio, 0);
+	gpiod_set_value(poweroff_gpio_1, 0);
+	if(poweroff_gpio_2 != NULL)
+		gpiod_set_value(poweroff_gpio_2, 0);
 	mdelay(100);
 
 	/* drive it active, also inactive->active edge */
-	gpiod_set_value(reset_gpio, 1);
+	gpiod_set_value(poweroff_gpio_1, 1);
+	if(poweroff_gpio_2 != NULL)
+		gpiod_set_value(poweroff_gpio_2, 1);
 
 	/* give it some time */
 	mdelay(3000);
@@ -57,20 +64,24 @@ static int gpio_poweroff_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 
-	reset_gpio = devm_gpiod_get(&pdev->dev, NULL);
-	if (IS_ERR(reset_gpio))
-		return PTR_ERR(reset_gpio);
+	poweroff_gpio_1 = devm_gpiod_get_index(&pdev->dev, NULL, 0);
+	if (IS_ERR(poweroff_gpio_1))
+		return PTR_ERR(poweroff_gpio_1);
+
+	poweroff_gpio_2 = devm_gpiod_get_index_optional(&pdev->dev, NULL, 1);
+	if (poweroff_gpio_2 != NULL && IS_ERR(poweroff_gpio_2))
+		return PTR_ERR(poweroff_gpio_2);
 
 	input = of_property_read_bool(pdev->dev.of_node, "input");
 
 	if (input) {
-		if (gpiod_direction_input(reset_gpio)) {
+		if (gpiod_direction_input(poweroff_gpio_1) || (poweroff_gpio_2 != NULL && gpiod_direction_input(poweroff_gpio_2))) {
 			dev_err(&pdev->dev,
 				"Could not set direction of reset GPIO to input\n");
 			return -ENODEV;
 		}
 	} else {
-		if (gpiod_direction_output(reset_gpio, 0)) {
+		if (gpiod_direction_output(poweroff_gpio_1, 0) || (poweroff_gpio_2 != NULL && gpiod_direction_output(poweroff_gpio_2, 0))) {
 			dev_err(&pdev->dev,
 				"Could not set direction of reset GPIO\n");
 			return -ENODEV;
